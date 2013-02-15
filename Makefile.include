@@ -52,7 +52,7 @@ OBJECTDIR = obj_$(TARGET)
 LOWERCASE = -abcdefghijklmnopqrstuvwxyz
 UPPERCASE = _ABCDEFGHIJKLMNOPQRSTUVWXYZ
 TARGET_UPPERCASE := ${strip ${shell echo $(TARGET) | sed y!$(LOWERCASE)!$(UPPERCASE)!}}
-CFLAGS += -DCONTIKI=1 -DCONTIKI_TARGET_$(TARGET_UPPERCASE)=1
+CFLAGS += -DCONTIKI=1 -DCONTIKI_TARGET_$(TARGET_UPPERCASE)=1 --std=gnu99
 
 include $(CONTIKI)/core/net/rime/Makefile.rime
 include $(CONTIKI)/core/net/mac/Makefile.mac
@@ -69,7 +69,8 @@ ifdef UIP_CONF_IPV6
   UIP   = uip6.c tcpip.c psock.c uip-udp-packet.c uip-split.c \
           resolv.c tcpdump.c uiplib.c simple-udp.c
   NET   += $(UIP) uip-icmp6.c uip-nd6.c uip-packetqueue.c \
-          sicslowpan.c neighbor-attr.c neighbor-info.c uip-ds6.c
+          sicslowpan.c neighbor-attr.c neighbor-info.c uip-ds6.c \
+          uip-mld.c
   ifneq ($(UIP_CONF_RPL),0)
     CFLAGS += -DUIP_CONF_IPV6_RPL=1
     include $(CONTIKI)/core/net/rpl/Makefile.rpl
@@ -105,9 +106,13 @@ PROJECT_OBJECTFILES = ${addprefix $(OBJECTDIR)/,${call oname, $(PROJECT_SOURCEFI
 
 ifdef APPS
   APPDIRS += ${wildcard ${addprefix $(CONTIKI)/apps/, $(APPS)} \
-	     ${addprefix $(CONTIKI)/platform/$(TARGET)/apps/, $(APPS)} \
-	     $(APPS)}
-  APPINCLUDES = ${foreach APP, $(APPS), ${wildcard ${foreach DIR, $(APPDIRS), $(DIR)/Makefile.$(APP)}}}
+                ${addprefix $(CONTIKI)/platform/$(TARGET)/apps/, $(APPS)} \
+		${addprefix , $(APPS)}}
+  APPINCLUDES = ${foreach APP, $(APPS), ${wildcard \
+                 $(CONTIKI)/apps/$(APP)/Makefile.$(APP) \
+                 $(CONTIKI)/platform/$(TARGET)/apps/$(APP)/Makefile.$(APP) \
+								 $(APP)/Makefile.$(APP)} \
+							}
   -include $(APPINCLUDES)
   APP_SOURCES = ${foreach APP, $(APPS), $($(APP)_src)}
   DSC_SOURCES = ${foreach APP, $(APPS), $($(APP)_dsc)}
@@ -144,7 +149,8 @@ CONTIKI_CPU_DIRS_CONCAT    = ${addprefix $(CONTIKI_CPU)/, \
                                $(CONTIKI_CPU_DIRS)}
 
 SOURCEDIRS = . $(PROJECTDIRS) $(CONTIKI_TARGET_DIRS_CONCAT) \
-             $(CONTIKI_CPU_DIRS_CONCAT) $(CONTIKIDIRS) $(APPDIRS) ${dir $(target_makefile)}
+             $(CONTIKI_CPU_DIRS_CONCAT) $(CONTIKIDIRS) $(APPDIRS) \
+								 $(CONTIKI)/../../shared
 
 vpath %.c $(SOURCEDIRS)
 vpath %.S $(SOURCEDIRS)
@@ -181,6 +187,7 @@ endef
         *.cprg *.bin *.data contiki*.a *.firmware core-labels.S *.ihex *.ini \
         *.ce *.co $(CLEAN)
 	-rm -rf $(OBJECTDIR)
+	-rm -f $(WEBCSOURCE)httpd-fsdata.c
 
 ifndef CUSTOM_RULE_C_TO_CE
 %.ce: %.c
@@ -224,7 +231,7 @@ endif
 
 ifndef CUSTOM_RULE_LINK
 %.$(TARGET): %.co $(PROJECT_OBJECTFILES) $(PROJECT_LIBRARIES) contiki-$(TARGET).a
-	$(LD) $(LDFLAGS) $(TARGET_STARTFILES) ${filter-out %.a,$^} ${filter %.a,$^} $(TARGET_LIBFILES) -o $@
+	$(LD) $(LDFLAGS) $(TARGET_STARTFILES) ${filter-out %.a,$^} ${filter %.a,$^} $(TARGET_LIBFILES) -o $@ -lc -lm
 endif
 
 %.ramprof: %.$(TARGET)

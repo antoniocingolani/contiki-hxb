@@ -74,6 +74,8 @@ RNDIS Status Information:
 #include <string.h>
 #if RF230BB
 #include "rf230bb.h"
+#elif RF212BB
+#include "rf212bb.h"
 #endif
 
 #include <stdio.h>
@@ -424,7 +426,7 @@ void rndis_query_process(void)
 			                 
         case OID_GEN_VENDOR_DESCRIPTION:        
 			c->InformationBufferLength = 8;
-			memcpy_P(INFBUF, PSTR("Atmel\0\0\0\0"), 8);
+			memcpy_P(INFBUF, PSTR("HEXABUS\0\0"), 8);
 			break;
 
         case OID_GEN_CURRENT_PACKET_FILTER:     
@@ -611,6 +613,16 @@ rndis_handle_config_parm(const char* parmname,const uint8_t* parmvalue,size_t pa
 		} else {
 			usbstick_mode.raw = 1;
 		}
+	}
+	else if(strncmp_P(parmname, PSTR("promiscuous"), 7) == 0) {
+		if (parmvalue[0] == '0') {
+/*TODO check if needed
+			extern uint64_t macLongAddr;
+			rf212_set_promiscuous_mode(0,(uint8_t *)&macLongAddr);
+*/			} else {
+			rf212_set_promiscuous_mode(1, NULL);
+		}
+
 	}
 
 }
@@ -1084,9 +1096,17 @@ uint8_t rndis_send(uint8_t * senddata, uint16_t sendlen, uint8_t led)
 void rndis_packetFilter(uint32_t newfilter)
 {
 	if (newfilter & NDIS_PACKET_TYPE_PROMISCUOUS) {
+#if RF212BB
+		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(true, NULL);
+#else
 		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(true);
+#endif
 	} else {
+   #if RF212BB
+		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(false, NULL);
+#else
 		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(false);
+#endif
 	}
 }
 

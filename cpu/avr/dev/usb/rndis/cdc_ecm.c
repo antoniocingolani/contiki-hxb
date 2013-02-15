@@ -11,6 +11,8 @@
 #include <stdio.h>
 #if RF230BB
 #include "rf230bb.h"
+#elif RF212BB
+#include "rf212bb.h"
 #endif
 
 #include <avr/pgmspace.h>
@@ -45,9 +47,17 @@ cdc_ecm_set_ethernet_packet_filter(void) {
 	PRINTF_P(PSTR("cdc_ecm: Received SET_ETHERNET_PACKET_FILTER: (0x%04X) "),usb_ecm_packet_filter);
 	if(usb_ecm_packet_filter & PACKET_TYPE_PROMISCUOUS) {
 		PRINTF_P(PSTR("PROMISCUOUS "));
+#if RF212BB
+		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(true, NULL);
+#elif RF230BB
 		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(true);
+#endif
 	} else {
+#if RF212BB
+		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(false, NULL);
+#elif RF230BB
 		USB_ETH_HOOK_SET_PROMISCIOUS_MODE(false);
+#endif
 	}
 
 	if(usb_ecm_packet_filter & PACKET_TYPE_ALL_MULTICAST)
@@ -195,6 +205,9 @@ cdc_ecm_process(void) {
 		if(usb_ecm_packet_filter & PACKET_TYPE_PROMISCUOUS) {
 #if RF230BB
 			rf230_set_promiscuous_mode(true);
+
+#elif RF212BB
+			rf212_set_promiscuous_mode(true, NULL);
 #else		
 			radio_set_trx_state(RX_ON);
 #endif

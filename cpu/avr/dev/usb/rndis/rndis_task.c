@@ -54,6 +54,8 @@
 #include "rndis/rndis_protocol.h"
 #if RF230BB
 #include "rf230bb.h"
+#elif RF212BB
+#include "rf212bb.h"
 #endif
 #include "uip.h"
 #include "sicslow_ethernet.h"

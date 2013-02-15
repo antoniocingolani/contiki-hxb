@@ -76,6 +76,7 @@
 #include "net/uip-icmp6.h"
 #include "net/uip-nd6.h"
 #include "net/uip-ds6.h"
+#include "net/uip-mld.h"
 
 #include <string.h>
 
@@ -102,6 +103,19 @@ void uip_log(char *msg);
 struct uip_stats uip_stat;
 #endif /* UIP_STATISTICS == 1 */
  
+
+#ifndef HEXABUS_SOCKET
+	#define HEXABUS_SOCKET	4
+#endif
+#ifndef HEXABUS_SOCKET
+	#define HEXABUS_USB		5
+#endif
+
+#if RAVEN_REVISION == HEXABUS_SOCKET
+extern uint8_t forwarding_enabled;
+#else
+#define forwarding_enabled (0)
+#endif
 
 /*---------------------------------------------------------------------------*/
 /** @{ \name Layer 2 variables */
@@ -1413,6 +1427,17 @@ uip_process(uint8_t flag)
       /** \note We don't implement any application callback for now */
       PRINTF("Received an icmp6 echo reply\n");
       UIP_STAT(++uip_stat.icmp.recv);
+      uip_len = 0;
+      break;
+    case ICMP6_ML_QUERY:
+      uip_icmp6_ml_query_input();
+      uip_len = 0;
+      break;
+    case ICMP6_ML_REPORT:
+      uip_icmp6_ml_report_input();
+      uip_len = 0;
+      break;
+    case ICMP6_ML_DONE:
       uip_len = 0;
       break;
     default:

@@ -89,6 +89,13 @@
 #define EEM_DEVICE_PROTOCOL           0x07      // EEM
 
 #define EP_CONTROL_LENGTH     64
+
+#if RAVEN_REVISION == HEXABUS_USB
+//USB Vendor ID for Hexabus-Project
+#define VENDOR_ID             0x24AD // embedded brains vendor ID = 0x24AD
+#define COMPOSITE_PRODUCT_ID  0x008E //Product ID for composite device
+#define NETWORK_PRODUCT_ID    0x008E //Product ID for just RNDIS device
+#else
 #define VENDOR_ID             0x03EB // Atmel vendor ID = 03EBh
 
 #if USB_CONF_MACINTOSH
@@ -102,6 +109,8 @@
 #endif
 
 #define MASS_PRODUCT_ID       0x202F //Product ID for mass storage
+#endif
+
 #define RELEASE_NUMBER        0x1000
 
 enum {
